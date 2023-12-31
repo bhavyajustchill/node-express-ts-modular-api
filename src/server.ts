@@ -2,14 +2,15 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import attemptConnection from "./config/db";
+import { notFoundMiddleware } from "./middleware/errors.middleware";
 import { groupRoutes } from "./utils/routeGroups";
 import todoRoutes from "./modules/v1/todo/todo.route";
-import { notFoundMiddleware } from "./middleware/errors.middleware";
+import userRoutes from "./modules/v1/user/user.route";
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
@@ -25,6 +26,7 @@ app.get("/", (req: express.Request, res: express.Response) => {
 app.use(
   groupRoutes("/api/v1", (router) => {
     router.use("/todos", todoRoutes);
+    router.use("/auth", userRoutes);
   })
 );
 
