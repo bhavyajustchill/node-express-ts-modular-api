@@ -2,7 +2,10 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import attemptConnection from "./config/db";
-import { notFoundMiddleware } from "./middleware/errors.middleware";
+import {
+  notFoundMiddleware,
+  internalServerErrorMiddleware,
+} from "./middleware/errors.middleware";
 import { groupRoutes } from "./utils/routeGroups";
 import todoRoutes from "./modules/v1/todo/todo.route";
 import userRoutes from "./modules/v1/user/user.route";
@@ -12,7 +15,6 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
@@ -32,6 +34,7 @@ app.use(
 
 // Middleware
 app.use(notFoundMiddleware);
+app.use(internalServerErrorMiddleware);
 
 // Start the server
 app.listen(PORT, () => {

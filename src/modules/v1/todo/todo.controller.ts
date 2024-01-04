@@ -1,4 +1,3 @@
-// src/modules/v1/todo/todo.controller.ts
 import { Request, Response } from "express";
 import TodoModel from "./todo.model";
 import { Todo as TodoInterface } from "./todo.interface";
@@ -40,14 +39,23 @@ export const getTodoById = async (req: Request, res: Response) => {
 export const updateTodo = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const updatedTodo: TodoInterface | null = await TodoModel.findByIdAndUpdate(id, req.body, {
-      new: true,
-    });
+    const updatedTodo: TodoInterface | null = await TodoModel.findByIdAndUpdate(
+      id,
+      req.body,
+      {
+        new: true,
+      }
+    );
     if (!updatedTodo) {
       res.status(404).json({ message: "Todo not found" });
       return;
     }
-    res.status(200).json({ message: "Todo Updated successfully!", updatedTodo: updatedTodo });
+    res
+      .status(200)
+      .json({
+        message: "Todo Updated successfully!",
+        updatedTodo: updatedTodo,
+      });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -56,7 +64,9 @@ export const updateTodo = async (req: Request, res: Response) => {
 export const deleteTodo = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const deletedTodo: TodoInterface | null = await TodoModel.findByIdAndRemove(id);
+    const deletedTodo: TodoInterface | null = await TodoModel.findByIdAndRemove(
+      id
+    );
     if (!deletedTodo) {
       res.status(404).json({ message: "Todo not found" });
       return;
