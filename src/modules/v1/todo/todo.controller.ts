@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
 import TodoModel from "./todo.model";
-import { Todo as TodoInterface } from "./todo.interface";
+import { Todo } from "./todo.interface";
 
 export const createTodo = async (req: Request, res: Response) => {
   try {
-    const todoData: TodoInterface = req.body;
+    const todoData: Todo = req.body;
     const todo = new TodoModel(todoData);
     const savedTodo = await todo.save();
     res.status(201).json(savedTodo);
@@ -15,7 +15,7 @@ export const createTodo = async (req: Request, res: Response) => {
 
 export const getTodos = async (req: Request, res: Response) => {
   try {
-    const todos: TodoInterface[] = await TodoModel.find();
+    const todos: Todo[] = await TodoModel.find();
     res.status(200).json(todos);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -25,7 +25,7 @@ export const getTodos = async (req: Request, res: Response) => {
 export const getTodoById = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const todo: TodoInterface | null = await TodoModel.findById(id);
+    const todo: Todo | null = await TodoModel.findById(id);
     if (!todo) {
       res.status(404).json({ message: "Todo not found" });
       return;
@@ -39,23 +39,17 @@ export const getTodoById = async (req: Request, res: Response) => {
 export const updateTodo = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const updatedTodo: TodoInterface | null = await TodoModel.findByIdAndUpdate(
-      id,
-      req.body,
-      {
-        new: true,
-      }
-    );
+    const updatedTodo: Todo | null = await TodoModel.findByIdAndUpdate(id, req.body, {
+      new: true,
+    });
     if (!updatedTodo) {
       res.status(404).json({ message: "Todo not found" });
       return;
     }
-    res
-      .status(200)
-      .json({
-        message: "Todo Updated successfully!",
-        updatedTodo: updatedTodo,
-      });
+    res.status(200).json({
+      message: "Todo Updated successfully!",
+      updatedTodo: updatedTodo,
+    });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
@@ -64,9 +58,7 @@ export const updateTodo = async (req: Request, res: Response) => {
 export const deleteTodo = async (req: Request, res: Response) => {
   const { id } = req.params;
   try {
-    const deletedTodo: TodoInterface | null = await TodoModel.findByIdAndRemove(
-      id
-    );
+    const deletedTodo: Todo | null = await TodoModel.findByIdAndRemove(id);
     if (!deletedTodo) {
       res.status(404).json({ message: "Todo not found" });
       return;
