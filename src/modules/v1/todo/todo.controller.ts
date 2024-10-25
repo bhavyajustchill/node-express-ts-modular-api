@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import TodoModel from "./todo.model";
 import { Todo } from "./todo.interface";
+import { todoValidation } from "./todo.validation";
 
 export const createTodo = async (req: Request, res: Response) => {
   try {
+    await todoValidation.validateAsync(req.body);
     const todoData: Todo = req.body;
     const todo = new TodoModel(todoData);
     const savedTodo = await todo.save();
