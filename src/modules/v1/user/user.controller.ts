@@ -12,7 +12,7 @@ const secretKey: string = process.env.JWT_SECRET as string;
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
-    const { error, value } = registerUserValidation.validate(req.body);
+    const { error, value } = await registerUserValidation.validateAsync(req.body);
 
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
