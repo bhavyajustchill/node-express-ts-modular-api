@@ -1,14 +1,26 @@
 import { Request, Response } from "express";
+import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import nodemailer from "nodemailer";
 import UserModel from "./user.model";
 import { User } from "./user.interface";
-import { registerUserValidation, loginUserValidation } from "./user.validation";
+import {
+  registerUserValidation,
+  loginUserValidation,
+  sendResetPasswordOtpValidation,
+  resetPasswordValidation,
+  updateProfileValidation,
+  updatePasswordValidation,
+} from "./user.validation";
 import dotenv from "dotenv";
+import { AuthenticatedRequest } from "middlewares/auth.middleware";
 
 dotenv.config();
 
 const secretKey: string = process.env.JWT_SECRET as string;
+const nodemailerAuthUser: string = process.env.NODEMAILER_AUTH_USER as string;
+const nodemailerAuthPassword: string = process.env.NODEMAILER_AUTH_PASSWORD as string;
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
@@ -28,14 +40,13 @@ export const registerUser = async (req: Request, res: Response) => {
     const savedUser = await newUser.save();
     res.status(201).json(savedUser);
   } catch (error: any) {
-    console.log(error);
     res.status(500).json({ error: error.message });
   }
 };
 
 export const loginUser = async (req: Request, res: Response) => {
   try {
-    const validated: any = await registerUserValidation.validateAsync(req.body);
+    const validated: any = await loginUserValidation.validateAsync(req.body);
 
     const userData: User = validated;
 
@@ -52,14 +63,129 @@ export const loginUser = async (req: Request, res: Response) => {
     }
 
     const token = jwt.sign(
-      { username: userToLogin.username, email: userToLogin.email, role: userToLogin.role },
+      {
+        id: userToLogin._id,
+        username: userToLogin.username,
+        email: userToLogin.email,
+        role: userToLogin.role,
+      },
       secretKey,
       {
         expiresIn: "30d",
       }
     );
 
-    res.status(200).json({ token, role: userToLogin.role });
+    res.status(200).json({ token, user: userToLogin });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const sendResetPasswordOtp = async (req: Request, res: Response) => {
+  try {
+    const validated = await sendResetPasswordOtpValidation.validateAsync(req.body);
+
+    const user = await UserModel.findOne({ email: validated.email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const otp = crypto.randomInt(100000, 999999).toString();
+    const otpExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
+
+    user.resetPassword = { otp, otpExpiry };
+    await user.save();
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: nodemailerAuthUser,
+        pass: nodemailerAuthPassword,
+      },
+    });
+
+    await transporter.sendMail({
+      from: nodemailerAuthUser,
+      to: validated.email,
+      subject: "Your OTP for Password Reset",
+      text: `Your OTP for password reset is ${otp}. It will expire in 15 minutes.`,
+    });
+
+    res.status(200).json({ message: "OTP sent to email" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const resetPasswordWithOtp = async (req: Request, res: Response) => {
+  try {
+    const validated = await resetPasswordValidation.validateAsync(req.body);
+
+    const user = await UserModel.findOne({ email: validated.email });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (
+      !user.resetPassword ||
+      user.resetPassword.otp !== validated.otp ||
+      !user.resetPassword.otpExpiry ||
+      user.resetPassword.otpExpiry < new Date()
+    ) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    user.password = await bcrypt.hash(validated.newPassword, 10);
+    user.resetPassword = undefined;
+    await user.save();
+
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const updateProfile = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const validated = await updateProfileValidation.validateAsync(req.body);
+
+    const userId = req.user.id;
+
+    const updatedUser = await UserModel.findByIdAndUpdate(
+      userId,
+      {
+        ...(validated.username && { username: validated.username }),
+        ...(validated.email && { email: validated.email }),
+      },
+      { new: true }
+    );
+
+    res.status(200).json({ message: "Profile updated successfully", updatedUser });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const updatePassword = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const validated = await updatePasswordValidation.validateAsync(req.body);
+
+    const userId = req.user.id;
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isOldPasswordValid = await bcrypt.compare(validated.oldPassword, user.password);
+    if (!isOldPasswordValid) {
+      return res.status(400).json({ message: "Old password is incorrect" });
+    }
+
+    user.password = await bcrypt.hash(validated.newPassword, 10);
+    await user.save();
+
+    res.status(200).json({ message: "Password updated successfully" });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

@@ -3,4 +3,8 @@ export interface User {
   password: string;
   email: string;
   role: "admin" | "user"; // Define possible roles
+  resetPassword?: {
+    otp?: string;
+    otpExpiry?: Date;
+  };
 }

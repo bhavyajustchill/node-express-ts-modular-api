@@ -6,7 +6,7 @@ dotenv.config();
 
 const secretKey: string = process.env.JWT_SECRET as string;
 
-interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends Request {
   user?: any;
 }
 

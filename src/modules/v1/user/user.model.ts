@@ -20,6 +20,16 @@ const UserSchema = new Schema({
     enum: ["admin", "user"], // Allow only 'admin' and 'user' roles
     default: "user",
   },
+  resetPassword: {
+    otp: {
+      type: String,
+      required: false,
+    },
+    otpExpiry: {
+      type: Date,
+      required: false,
+    },
+  },
 });
 
 interface UserDocument extends UserInterface, Document {}
