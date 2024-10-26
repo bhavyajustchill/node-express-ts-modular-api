@@ -12,17 +12,14 @@ const secretKey: string = process.env.JWT_SECRET as string;
 
 export const registerUser = async (req: Request, res: Response) => {
   try {
-    const { error, value } = await registerUserValidation.validateAsync(req.body);
+    const validated: any = await registerUserValidation.validateAsync(req.body);
 
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
+    const userData: User = validated;
 
-    const userData: User = value;
-    const existingUser = await UserModel.findOne({ username: userData.username });
+    const existingUser = await UserModel.findOne({ email: userData.email });
 
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "User with this email already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(userData.password, 10);
@@ -31,36 +28,38 @@ export const registerUser = async (req: Request, res: Response) => {
     const savedUser = await newUser.save();
     res.status(201).json(savedUser);
   } catch (error: any) {
+    console.log(error);
     res.status(500).json({ error: error.message });
   }
 };
 
 export const loginUser = async (req: Request, res: Response) => {
   try {
-    const { error, value } = loginUserValidation.validate(req.body);
+    const validated: any = await registerUserValidation.validateAsync(req.body);
 
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
+    const userData: User = validated;
 
-    const { username, password } = value;
-    const user = await UserModel.findOne({ username });
+    const userToLogin = await UserModel.findOne({ email: userData.email });
 
-    if (!user) {
+    if (!userToLogin) {
       return res.status(401).json({ message: "User doesn't exist!" });
     }
 
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    const passwordMatch = await bcrypt.compare(userData.password, userToLogin.password);
 
     if (!passwordMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    const token = jwt.sign({ username: user.username, role: user.role }, secretKey, {
-      expiresIn: "1h",
-    });
+    const token = jwt.sign(
+      { username: userToLogin.username, email: userToLogin.email, role: userToLogin.role },
+      secretKey,
+      {
+        expiresIn: "30d",
+      }
+    );
 
-    res.status(200).json({ token, role: user.role });
+    res.status(200).json({ token, role: userToLogin.role });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
