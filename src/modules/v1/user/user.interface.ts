@@ -7,4 +7,5 @@ export interface User {
     otp?: string;
     otpExpiry?: Date;
   };
+  profilePictureUrl?: string;
 }

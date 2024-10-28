@@ -15,6 +15,7 @@ import {
 } from "./user.validation";
 import dotenv from "dotenv";
 import { AuthenticatedRequest } from "middlewares/auth.middleware";
+import { uploadFileToS3, MulterS3File, deleteFileFromS3 } from "../../../utils/aws-s3";
 
 dotenv.config();
 
@@ -188,6 +189,57 @@ export const updatePassword = async (req: AuthenticatedRequest, res: Response) =
 
     res.status(200).json({ message: "Password updated successfully" });
   } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+export const updateProfileImage = async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await UserModel.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.profilePictureUrl) {
+      try {
+        const profilePictureUrl = user.profilePictureUrl;
+        const url = new URL(profilePictureUrl);
+        const key = decodeURIComponent(url.pathname.substring(1)); // Remove leading '/'
+
+        await deleteFileFromS3(key);
+        console.log("Old profile image deleted from S3");
+      } catch (deleteErr) {
+        console.error("Error deleting old profile image:", deleteErr);
+      }
+    }
+
+    const upload = uploadFileToS3("profile-pictures");
+
+    upload.single("profilePicture")(req, res, async (err: any) => {
+      if (err) {
+        console.error("Upload Error:", err);
+        return res.status(500).json({ error: err.message });
+      }
+
+      const file = req.file as MulterS3File;
+
+      if (!file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+
+      user.profilePictureUrl = file.location;
+      await user.save();
+
+      res.status(200).json({
+        message: "Profile image updated successfully",
+        user,
+      });
+    });
+  } catch (error: any) {
+    console.error("Error in updateProfileImage:", error);
     res.status(500).json({ error: error.message });
   }
 };

@@ -15,6 +15,10 @@ const UserSchema = new Schema({
     type: String,
     required: true,
   },
+  profilePictureUrl: {
+    type: String,
+    required: false,
+  },
   role: {
     type: String,
     enum: ["admin", "user"], // Allow only 'admin' and 'user' roles
