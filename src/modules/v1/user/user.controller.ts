@@ -19,6 +19,7 @@ import { AuthenticatedRequest } from "middlewares/auth.middleware";
 dotenv.config();
 
 const secretKey: string = process.env.JWT_SECRET as string;
+const nodemailerServiceName: string = process.env.NODEMAILER_SERVICE_NAME as string;
 const nodemailerAuthUser: string = process.env.NODEMAILER_AUTH_USER as string;
 const nodemailerAuthPassword: string = process.env.NODEMAILER_AUTH_PASSWORD as string;
 
@@ -97,7 +98,7 @@ export const sendResetPasswordOtp = async (req: Request, res: Response) => {
     await user.save();
 
     const transporter = nodemailer.createTransport({
-      service: "gmail",
+      service: nodemailerServiceName,
       auth: {
         user: nodemailerAuthUser,
         pass: nodemailerAuthPassword,
