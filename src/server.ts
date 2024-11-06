@@ -2,11 +2,15 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import attemptConnection from "./config/db.config";
-import { notFoundMiddleware, internalServerErrorMiddleware } from "./middlewares/errors.middleware";
+import {
+  notFoundMiddleware,
+  internalServerErrorMiddleware,
+} from "./middlewares/errors.middleware";
 import { stopBackendMiddleware } from "./middlewares/dangerous.middleware";
 import { groupRoutes } from "./utils/group-routes";
 import todoRoutes from "./modules/v1/todo/todo.route";
 import userRoutes from "./modules/v1/user/user.route";
+import paymentRoutes from "./modules/v1/payment/payment.route";
 
 dotenv.config();
 
@@ -27,6 +31,7 @@ app.use(
   groupRoutes("/api/v1", (router) => {
     router.use("/todos", todoRoutes);
     router.use("/auth", userRoutes);
+    router.use("/payment", paymentRoutes);
   })
 );
 
