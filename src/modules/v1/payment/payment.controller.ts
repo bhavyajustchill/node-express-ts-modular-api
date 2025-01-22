@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import crypto from "crypto";
-import {
-  createOrderValidation,
-  verifyPaymentValidation,
-} from "./payment.validation";
+import { createOrderValidation, verifyPaymentValidation } from "./payment.validation";
 import PaymentModel from "./payment.model";
 import { Payment } from "./payment.interface";
 import razorpayInstance from "../../../config/razorpay.config";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export const createOrder = async (req: Request, res: Response) => {
   try {
@@ -30,8 +30,7 @@ export const verifyPayment = async (req: Request, res: Response) => {
   try {
     const validated = await verifyPaymentValidation.validateAsync(req.body);
 
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } =
-      validated;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = validated;
 
     const generated_signature = crypto
       .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)

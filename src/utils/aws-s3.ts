@@ -3,6 +3,9 @@ import multerS3 from "multer-s3";
 import { s3 } from "../config/aws.config";
 import { Request } from "express";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export interface MulterS3File extends Express.Multer.File {
   location: string;
